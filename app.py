@@ -1,7 +1,7 @@
 from os import environ
-
-from flask import Flask, render_template, request, jsonify, abort
-from werkzeug.security import safe_str_cmp
+from flask import Flask, render_template, request
+from slackclient import SlackClient
+from slackeventsapi import SlackEventAdapter
 
 import error_handling
 
@@ -15,6 +15,9 @@ app.config['SLACK_VERIFICATION_TOKEN'] = environ.get('SLACK_VERIFICATION_TOKEN')
 
 # register error handlers
 error_handling.init_app(app)
+
+# register Slack Event Adapter
+slack_events_adapter = SlackEventAdapter(app.config['SLACK_VERIFICATION_TOKEN'], "/events", app)
 
 ###
 ### UTILS ###
@@ -37,18 +40,4 @@ def index():
     # http://1lineart.kulaone.com/
     return render_template('generic.html', context={'heading': "victorybot",
                                                     'message': "ᕦ(ò_óˇ)ᕤ"})
-
-
-@app.route('/events', methods=['POST'])
-def incoming():
-    data = request.get_json()
-    if token_valid(data.get('token')):
-        if data.get('type') == 'url_verification':
-            return jsonify({'challenge': data.get('challenge')})
-        pass
-    abort(403)
-
-
-def token_valid(token):
-    return safe_str_cmp(app.config['SLACK_VERIFICATION_TOKEN'], token)
 

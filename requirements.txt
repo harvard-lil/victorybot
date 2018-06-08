@@ -7,9 +7,11 @@ idna==2.6
 itsdangerous==0.24
 Jinja2==2.10
 MarkupSafe==1.0
+pyee==5.0.0
 requests==2.18.4
 six==1.11.0
 slackclient==1.2.1
+slackeventsapi==1.1.0
 urllib3==1.22
 websocket-client==0.48.0
 Werkzeug==0.14.1
