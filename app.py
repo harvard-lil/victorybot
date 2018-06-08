@@ -1,7 +1,9 @@
 from os import environ
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from slackclient import SlackClient
 from slackeventsapi import SlackEventAdapter
+import time
+
 
 import error_handling
 
@@ -12,6 +14,7 @@ app.config['SECRET_KEY'] = environ.get('FLASK_SECRET_KEY')
 app.config['LOG_LEVEL'] = environ.get('LOG_LEVEL', 'WARNING')
 app.config['SLACKBOT_TOKEN'] = environ.get('SLACKBOT_TOKEN')
 app.config['SLACK_VERIFICATION_TOKEN'] = environ.get('SLACK_VERIFICATION_TOKEN')
+app.config['SCREENSHARE'] = environ.get('SCREENSHARE')
 
 # register error handlers
 error_handling.init_app(app)
@@ -49,8 +52,18 @@ def handle_message(event_data):
     if message.get("subtype") is None:
         channel = message["channel"]
         announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
-        message = "Victory! Victory! {}! <!here|here>, <@{}> is victorious!  :tada:".format(announcement, message["user"])
+        message = "Victory! Victory! {}! <!here|here>!  :tada:".format(announcement, message["user"])
         CLIENT.api_call("chat.postMessage", channel=channel, text=message)
+        temporarily_post_to_screenshare()
+    return jsonify({"status":"ok"})
+
+
+def temporarily_post_to_screenshare():
+    # in screenshare, for a minute
+    response = CLIENT.api_call("chat.postMessage", channel=app.config['SCREENSHARE'], text="I should be here for only a minute. Then be deleted automatically.")
+    if response["ok"]:
+        time.sleep(60)
+        CLIENT.api_call("chat.delete", channel=app.config['SCREENSHARE'], ts=response["ts"])
 
 
 @slack_events_adapter.on("reaction_added")
@@ -62,3 +75,5 @@ def reaction_added(event_data):
     if emoji in ['tada', 'confetti_ball', 'clap', 'raised_hands']:
         text = ":%s:" % emoji
         CLIENT.api_call("chat.postMessage", channel=channel, text=text)
+    return jsonify({"status":"ok"})
+
