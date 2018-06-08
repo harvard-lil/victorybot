@@ -1,10 +1,8 @@
 from os import environ
-from ast import literal_eval
-import requests
-from functools import wraps
-from datetime import datetime, timedelta
 
-from flask import Flask, request, redirect, session, abort, url_for, render_template
+from flask import Flask, render_template, request, jsonify, abort
+from werkzeug.security import safe_str_cmp
+
 import error_handling
 
 import logging
@@ -12,6 +10,8 @@ import logging
 app = Flask(__name__)
 app.config['SECRET_KEY'] = environ.get('FLASK_SECRET_KEY')
 app.config['LOG_LEVEL'] = environ.get('LOG_LEVEL', 'WARNING')
+app.config['SLACKBOT_TOKEN'] = environ.get('SLACKBOT_TOKEN')
+app.config['SLACK_VERIFICATION_TOKEN'] = environ.get('SLACK_VERIFICATION_TOKEN')
 
 # register error handlers
 error_handling.init_app(app)
@@ -32,11 +32,23 @@ def setup_logging():
 ### ROUTES
 ###
 
-@app.route('/', defaults={'path': ''}, methods=['GET'])
-def index(path):
+@app.route('/', methods=['GET'])
+def index():
     # http://1lineart.kulaone.com/
     return render_template('generic.html', context={'heading': "victorybot",
                                                     'message': "ᕦ(ò_óˇ)ᕤ"})
 
 
+@app.route('/events', methods=['POST'])
+def incoming():
+    data = request.get_json()
+    if token_valid(data.get('token')):
+        if data.get('type') == 'url_verification':
+            return jsonify({'challenge': data.get('challenge')})
+        pass
+    abort(403)
+
+
+def token_valid(token):
+    return safe_str_cmp(app.config['SLACK_VERIFICATION_TOKEN'], token)
 
