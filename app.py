@@ -51,3 +51,14 @@ def handle_message(event_data):
         channel = message["channel"]
         message = "Hello <@%s>! :tada:" % message["user"]
         CLIENT.api_call("chat.postMessage", channel=channel, text=message)
+
+
+@slack_events_adapter.on("reaction_added")
+def reaction_added(event_data):
+    team_id = event_data["team_id"]
+    event = event_data["event"]
+    emoji = event["reaction"]
+    channel = event["item"]["channel"]
+    if emoji in ['tada', 'confetti_ball']:
+        text = ":%s:" % emoji
+        CLIENT.api_call("chat.postMessage", channel=channel, text=text)
