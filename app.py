@@ -46,10 +46,10 @@ def index():
 @slack_events_adapter.on("app_mention")
 def handle_message(event_data):
     message = event_data["event"]
-    # If the incoming message contains "hi", then respond with a "Hello" message
-    if message.get("subtype") is None and "hi" in message.get('text'):
+    if message.get("subtype") is None:
         channel = message["channel"]
-        message = "Hello <@%s>! :tada:" % message["user"]
+        announcement = message.get('text').split('>', 1)[1].strip(',!.?;:')
+        message = "Victory! Victory! {}! <!here|here>, <@{}> is victorious!  :tada:".format(announcement, message["user"])
         CLIENT.api_call("chat.postMessage", channel=channel, text=message)
 
 
