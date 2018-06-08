@@ -77,6 +77,9 @@ def reaction_added(event_data):
     channel = event["item"]["channel"]
     if emoji in ['tada', 'confetti_ball', 'clap', 'raised_hands']:
         text = ":%s:" % emoji
+        item = event.get("item", {})
+        if item.get('type') == 'message' and item.get('thread_ts'):
+            CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=event_data["ts"])
         CLIENT.api_call("chat.postMessage", channel=channel, text=text)
     return jsonify({"status":"ok"})
 
