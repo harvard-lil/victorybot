@@ -48,7 +48,7 @@ def handle_message(event_data):
     message = event_data["event"]
     if message.get("subtype") is None:
         channel = message["channel"]
-        announcement = message.get('text').split('>', 1)[1].strip(',!.?;:')
+        announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
         message = "Victory! Victory! {}! <!here|here>, <@{}> is victorious!  :tada:".format(announcement, message["user"])
         CLIENT.api_call("chat.postMessage", channel=channel, text=message)
 
@@ -59,6 +59,6 @@ def reaction_added(event_data):
     event = event_data["event"]
     emoji = event["reaction"]
     channel = event["item"]["channel"]
-    if emoji in ['tada', 'confetti_ball']:
+    if emoji in ['tada', 'confetti_ball', 'clap', 'raised_hands']:
         text = ":%s:" % emoji
         CLIENT.api_call("chat.postMessage", channel=channel, text=text)
