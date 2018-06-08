@@ -18,6 +18,7 @@ error_handling.init_app(app)
 
 # register Slack Event Adapter
 slack_events_adapter = SlackEventAdapter(app.config['SLACK_VERIFICATION_TOKEN'], "/events", app)
+CLIENT = SlackClient(app.config['SLACKBOT_TOKEN'])
 
 ###
 ### UTILS ###
@@ -41,3 +42,12 @@ def index():
     return render_template('generic.html', context={'heading': "victorybot",
                                                     'message': "ᕦ(ò_óˇ)ᕤ"})
 
+
+@slack_events_adapter.on("app_mention")
+def handle_message(event_data):
+    message = event_data["event"]
+    # If the incoming message contains "hi", then respond with a "Hello" message
+    if message.get("subtype") is None and "hi" in message.get('text'):
+        channel = message["channel"]
+        message = "Hello <@%s>! :tada:" % message["user"]
+        CLIENT.api_call("chat.postMessage", channel=channel, text=message)
