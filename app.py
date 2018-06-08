@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify
 from slackclient import SlackClient
 from slackeventsapi import SlackEventAdapter
 import time
-
+import threading
 
 import error_handling
 
@@ -54,7 +54,7 @@ def handle_message(event_data):
         announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
         message = "Victory! Victory! {}! <!here|here>!  :tada:".format(announcement, message["user"])
         CLIENT.api_call("chat.postMessage", channel=channel, text=message)
-        temporarily_post_to_screenshare()
+        threading.Thread(target=temporarily_post_to_screenshare).start()
     return jsonify({"status":"ok"})
 
 
