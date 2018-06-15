@@ -2,6 +2,7 @@ from ast import literal_eval
 from os import environ
 from flask import Flask, render_template, request, jsonify
 from flask_redis import FlaskRedis
+import hashlib
 from slackclient import SlackClient
 from slackeventsapi import SlackEventAdapter
 import time
@@ -12,20 +13,23 @@ import error_handling
 import logging
 
 app = Flask(__name__)
+# required
 app.config['SECRET_KEY'] = environ.get('FLASK_SECRET_KEY')
 app.config['REDIS_URL'] = environ.get('REDIS_URL')
-app.config['LOG_LEVEL'] = environ.get('LOG_LEVEL', 'WARNING')
 app.config['SLACKBOT_TOKEN'] = environ.get('SLACKBOT_TOKEN')
 app.config['SLACK_VERIFICATION_TOKEN'] = environ.get('SLACK_VERIFICATION_TOKEN')
 app.config['SCREENSHARE_CHANNEL'] = environ.get('SCREENSHARE_CHANNEL')
 app.config['SCREENSHARE_URL'] = environ.get('SCREENSHARE_URL')
+# optional
 app.config['SCREENSHARE_DURATION'] = literal_eval(environ.get('SCREENSHARE_DURATION', '60'))
+app.config['REDIS_KEY_FORMAT'] = environ.get('REDIS_KEY_FORMAT', "{}:{}")
+app.config['LOG_LEVEL'] = environ.get('LOG_LEVEL', 'WARNING')
 
 # register error handlers
 error_handling.init_app(app)
 
 # register redis
-redis_store = FlaskRedis(app)
+REDIS_STORE = FlaskRedis(app)
 
 # register Slack Event Adapter
 slack_events_adapter = SlackEventAdapter(app.config['SLACK_VERIFICATION_TOKEN'], "/events", app)
@@ -60,11 +64,20 @@ def handle_message(event_data):
     if message.get("subtype") is None:
         channel = message["channel"]
         announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
-        message = "Victory! Victory! {}! <!here|here>!  :tada:".format(announcement, message["user"])
-        CLIENT.api_call("chat.postMessage", channel=channel, text=message)
-        threading.Thread(target=temporarily_post_to_screenshare).start()
+        key = f"{channel}:{hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()}"
+        app.logger.warning(key)
+        if not REDIS_STORE.exists(key):
+            REDIS_STORE.setex(key, 20)
+            message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
+            CLIENT.api_call("chat.postMessage", channel=channel, text=message)
+            # threading.Thread(target=temporarily_post_to_screenshare).start()
+        else:
+            app.logger.warning('Duplicate')
     return jsonify({"status":"ok"})
 
+def is_a_duplicate(channel, message):
+    # see if the thing is in redis
+    return True
 
 def temporarily_post_to_screenshare():
     # in screenshare, for a minute
