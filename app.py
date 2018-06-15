@@ -70,8 +70,8 @@ def handle_message(event_data):
         announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
         key = f"{channel}:{hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()}"
 
-        if datetime.now().timestamp() - float(event_timestamp) < 90 and
-           not REDIS_STORE.exists(key):
+        if (datetime.now().timestamp() - float(event_timestamp) < 90 and
+           not REDIS_STORE.exists(key)):
             REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
             message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
             CLIENT.api_call("chat.postMessage", channel=channel, text=message)
