@@ -62,15 +62,21 @@ def index():
 @slack_events_adapter.on("app_mention")
 def handle_message(event_data):
     message = event_data["event"]
+
     if message.get("subtype") is None:
+
         channel = message["channel"]
+        event_timestamp = event["event_ts"]
         announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
         key = f"{channel}:{hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()}"
-        if not REDIS_STORE.exists(key):
+
+        if datetime.now().timestamp() - float(event_timestamp) < 90 and
+           not REDIS_STORE.exists(key):
             REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
             message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
             CLIENT.api_call("chat.postMessage", channel=channel, text=message)
             threading.Thread(target=temporarily_post_to_screenshare).start()
+
     return jsonify({"status":"ok"})
 
 
