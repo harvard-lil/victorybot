@@ -78,7 +78,7 @@ def handle_message(event_data):
             REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
             message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
             CLIENT.api_call("chat.postMessage", channel=channel, text=message)
-            # threading.Thread(target=temporarily_post_to_screenshare).start()
+            threading.Thread(target=temporarily_post_to_screenshare).start()
 
     return jsonify({"status":"ok"})
 
