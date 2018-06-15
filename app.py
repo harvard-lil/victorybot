@@ -1,6 +1,7 @@
 from ast import literal_eval
 from os import environ
 from flask import Flask, render_template, request, jsonify
+from flask_redis import FlaskRedis
 from slackclient import SlackClient
 from slackeventsapi import SlackEventAdapter
 import time
@@ -12,6 +13,7 @@ import logging
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = environ.get('FLASK_SECRET_KEY')
+app.config['REDIS_URL'] = environ.get('REDIS_URL')
 app.config['LOG_LEVEL'] = environ.get('LOG_LEVEL', 'WARNING')
 app.config['SLACKBOT_TOKEN'] = environ.get('SLACKBOT_TOKEN')
 app.config['SLACK_VERIFICATION_TOKEN'] = environ.get('SLACK_VERIFICATION_TOKEN')
@@ -21,6 +23,9 @@ app.config['SCREENSHARE_DURATION'] = literal_eval(environ.get('SCREENSHARE_DURAT
 
 # register error handlers
 error_handling.init_app(app)
+
+# register redis
+redis_store = FlaskRedis(app)
 
 # register Slack Event Adapter
 slack_events_adapter = SlackEventAdapter(app.config['SLACK_VERIFICATION_TOKEN'], "/events", app)
