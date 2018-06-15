@@ -106,9 +106,7 @@ def reaction_added(event_data):
         not REDIS_STORE.exists(key)):
             REDIS_STORE.set(key, "")
             text = f":{emoji}:"
-            # if item.get('type') == 'message' and item.get('thread_ts'):
-            #     CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=event_data["ts"])
-            CLIENT.api_call("chat.postMessage", channel=channel, text=text)
+            CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=message_timestamp)
 
     return jsonify({"status":"ok"})
 
