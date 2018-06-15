@@ -1,4 +1,5 @@
 from ast import literal_eval
+from datetime import datetime
 from os import environ
 from flask import Flask, render_template, request, jsonify
 from flask_redis import FlaskRedis
@@ -22,7 +23,7 @@ app.config['SCREENSHARE_CHANNEL'] = environ.get('SCREENSHARE_CHANNEL')
 app.config['SCREENSHARE_URL'] = environ.get('SCREENSHARE_URL')
 # optional
 app.config['SCREENSHARE_DURATION'] = literal_eval(environ.get('SCREENSHARE_DURATION', '60'))
-app.config['REDIS_KEY_FORMAT'] = environ.get('REDIS_KEY_FORMAT', "{}:{}")
+app.config['REDIS_EXPIRES'] = literal_eval(environ.get('REDIS_KEY_FORMAT', '300'))
 app.config['LOG_LEVEL'] = environ.get('LOG_LEVEL', 'WARNING')
 
 # register error handlers
@@ -66,7 +67,7 @@ def handle_message(event_data):
         announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
         key = f"{channel}:{hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()}"
         if not REDIS_STORE.exists(key):
-            REDIS_STORE.setex(key, 300, "")
+            REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
             message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
             CLIENT.api_call("chat.postMessage", channel=channel, text=message)
             threading.Thread(target=temporarily_post_to_screenshare).start()
@@ -85,13 +86,23 @@ def temporarily_post_to_screenshare():
 def reaction_added(event_data):
     team_id = event_data["team_id"]
     event = event_data["event"]
+
+    event_timestamp = event["event_ts"]
     emoji = event["reaction"]
     channel = event["item"]["channel"]
-    if emoji in ['tada', 'confetti_ball', 'clap', 'raised_hands']:
-        text = ":%s:" % emoji
-        item = event.get("item", {})
-        if item.get('type') == 'message' and item.get('thread_ts'):
-            CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=event_data["ts"])
-        CLIENT.api_call("chat.postMessage", channel=channel, text=text)
+    message_ts = event["item"]["ts"]
+
+    key = f"{channel}:{event_timestamp}:{hashlib.md5(bytes(emoji, 'utf-8')).hexdigest()}"
+
+    if (emoji in ['tada', 'confetti_ball', 'clap', 'raised_hands'] and
+        datetime.now().timestamp() - float(event_timestamp) < 120 and
+        float(event_timestamp) - float(message_ts) < 120 and
+        not REDIS_STORE.exists(key)):
+            REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
+            text = f":{emoji}:"
+            # if item.get('type') == 'message' and item.get('thread_ts'):
+            #     CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=event_data["ts"])
+            CLIENT.api_call("chat.postMessage", channel=channel, text=text)
+
     return jsonify({"status":"ok"})
 
