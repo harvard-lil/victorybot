@@ -18,6 +18,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = environ.get('FLASK_SECRET_KEY')
 app.config['REDIS_URL'] = environ.get('REDIS_URL')
 app.config['SLACKBOT_TOKEN'] = environ.get('SLACKBOT_TOKEN')
+app.config['SLACKBOT_ID'] = environ.get('SLACKBOT_ID')
 app.config['SLACK_VERIFICATION_TOKEN'] = environ.get('SLACK_VERIFICATION_TOKEN')
 app.config['SCREENSHARE_CHANNEL'] = environ.get('SCREENSHARE_CHANNEL')
 app.config['SCREENSHARE_URL'] = environ.get('SCREENSHARE_URL')
@@ -61,13 +62,15 @@ def index():
 
 @slack_events_adapter.on("app_mention")
 def handle_message(event_data):
-    message = event_data["event"]
+    event = event_data["event"]
 
-    if message.get("subtype") is None:
+    if event.get("subtype") is None:
 
-        channel = message["channel"]
+        channel = event["channel"]
         event_timestamp = event["event_ts"]
-        announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
+        text = [phrase for phrase in event.get('text', '').split(f"<@{app.config['SLACKBOT_ID']}>") if phrase]
+        announcement = text[-1].strip(' ,!.?;:') if len(text) > 0 else ''
+
         key = f"{channel}:{hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()}"
 
         if (datetime.now().timestamp() - float(event_timestamp) < 90 and
@@ -75,7 +78,7 @@ def handle_message(event_data):
             REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
             message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
             CLIENT.api_call("chat.postMessage", channel=channel, text=message)
-            threading.Thread(target=temporarily_post_to_screenshare).start()
+            # threading.Thread(target=temporarily_post_to_screenshare).start()
 
     return jsonify({"status":"ok"})
 
