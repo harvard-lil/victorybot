@@ -65,19 +65,13 @@ def handle_message(event_data):
         channel = message["channel"]
         announcement = message.get('text').split('>', 1)[1].strip(' ,!.?;:')
         key = f"{channel}:{hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()}"
-        app.logger.warning(key)
         if not REDIS_STORE.exists(key):
-            REDIS_STORE.setex(key, 20, "")
+            REDIS_STORE.setex(key, 300, "")
             message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
             CLIENT.api_call("chat.postMessage", channel=channel, text=message)
-            # threading.Thread(target=temporarily_post_to_screenshare).start()
-        else:
-            app.logger.warning('Duplicate')
+            threading.Thread(target=temporarily_post_to_screenshare).start()
     return jsonify({"status":"ok"})
 
-def is_a_duplicate(channel, message):
-    # see if the thing is in redis
-    return True
 
 def temporarily_post_to_screenshare():
     # in screenshare, for a minute
