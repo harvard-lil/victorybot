@@ -90,15 +90,15 @@ def reaction_added(event_data):
     event_timestamp = event["event_ts"]
     emoji = event["reaction"]
     channel = event["item"]["channel"]
-    message_ts = event["item"]["ts"]
+    message_timestamp = event["item"]["ts"]
 
-    key = f"{channel}:{event_timestamp}:{hashlib.md5(bytes(emoji, 'utf-8')).hexdigest()}"
+    key = f"{channel}:{message_timestamp}:{hashlib.md5(bytes(emoji, 'utf-8')).hexdigest()}"
 
     if (emoji in ['tada', 'confetti_ball', 'clap', 'raised_hands'] and
-        datetime.now().timestamp() - float(event_timestamp) < 120 and
-        float(event_timestamp) - float(message_ts) < 120 and
+        datetime.now().timestamp() - float(event_timestamp) < 90 and
+        float(event_timestamp) - float(message_timestamp) < 90 and
         not REDIS_STORE.exists(key)):
-            REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
+            REDIS_STORE.set(key, "")
             text = f":{emoji}:"
             # if item.get('type') == 'message' and item.get('thread_ts'):
             #     CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=event_data["ts"])
