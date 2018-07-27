@@ -22,6 +22,7 @@ app.config['SLACKBOT_ID'] = environ.get('SLACKBOT_ID')
 app.config['SLACK_VERIFICATION_TOKEN'] = environ.get('SLACK_VERIFICATION_TOKEN')
 app.config['SCREENSHARE_CHANNEL'] = environ.get('SCREENSHARE_CHANNEL')
 app.config['SCREENSHARE_URL'] = environ.get('SCREENSHARE_URL')
+app.config['ADAM_ID'] = environ.get('ADAM_ID')
 # optional
 app.config['SCREENSHARE_DURATION'] = literal_eval(environ.get('SCREENSHARE_DURATION', '60'))
 app.config['REDIS_EXPIRES'] = literal_eval(environ.get('REDIS_KEY_FORMAT', '300'))
@@ -64,10 +65,11 @@ def index():
 def handle_message(event_data):
     event = event_data["event"]
 
-    if event.get("subtype") is None:
+    if event.get("subtype") is None and event["user"] != app.config['SLACKBOT_ID']:
 
         channel = event["channel"]
         event_timestamp = event["event_ts"]
+
         text = [phrase for phrase in event.get('text', '').split(f"<@{app.config['SLACKBOT_ID']}>") if phrase]
         announcement = text[-1].strip(' ,!.?;:') if len(text) > 0 else ''
 
@@ -77,7 +79,7 @@ def handle_message(event_data):
            not REDIS_STORE.exists(key)):
             REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
             message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
-            CLIENT.api_call("chat.postMessage", channel=channel, text=message)
+            CLIENT.api_call("chat.postMessage", channel=channel, text=message, as_user=True)
             threading.Thread(target=temporarily_post_to_screenshare).start()
 
     return jsonify({"status":"ok"})
@@ -85,7 +87,7 @@ def handle_message(event_data):
 
 def temporarily_post_to_screenshare():
     # in screenshare, for a minute
-    response = CLIENT.api_call("chat.postMessage", channel=app.config['SCREENSHARE_CHANNEL'], text=app.config['SCREENSHARE_URL'])
+    response = CLIENT.api_call("chat.postMessage", channel=app.config['SCREENSHARE_CHANNEL'], text=app.config['SCREENSHARE_URL'], as_user=True)
     if response["ok"]:
         time.sleep(app.config['SCREENSHARE_DURATION'])
         CLIENT.api_call("chat.delete", channel=app.config['SCREENSHARE_CHANNEL'], ts=response["ts"])
@@ -97,9 +99,17 @@ def reaction_added(event_data):
     event = event_data["event"]
 
     event_timestamp = event["event_ts"]
+    user = event["user"]
     emoji = event["reaction"]
     channel = event["item"]["channel"]
     message_timestamp = event["item"]["ts"]
+    message_user = event.get("item_user", "")
+
+    app.logger.warning(event_data)
+    app.logger.warning(message_user)
+    app.logger.warning(user)
+    app.logger.warning(message_user == app.config['SLACKBOT_ID'] and user == app.config['ADAM_ID'])
+
 
     key = f"{channel}:{message_timestamp}:{hashlib.md5(bytes(emoji, 'utf-8')).hexdigest()}"
 
@@ -108,8 +118,10 @@ def reaction_added(event_data):
         float(event_timestamp) - float(message_timestamp) < 90 and
         not REDIS_STORE.exists(key)):
             REDIS_STORE.set(key, "")
-            text = f":{emoji}:"
-            CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=message_timestamp)
+            if message_user == app.config['SLACKBOT_ID'] and user == app.config['ADAM_ID']:
+                text = ":heart: :cooladam: :heart:"
+            else:
+                text = f":{emoji}:"
+            CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=message_timestamp, as_user=True)
 
     return jsonify({"status":"ok"})
-
