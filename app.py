@@ -105,12 +105,6 @@ def reaction_added(event_data):
     message_timestamp = event["item"]["ts"]
     message_user = event.get("item_user", "")
 
-    app.logger.warning(event_data)
-    app.logger.warning(message_user)
-    app.logger.warning(user)
-    app.logger.warning(message_user == app.config['SLACKBOT_ID'] and user == app.config['ADAM_ID'])
-
-
     key = f"{channel}:{message_timestamp}:{hashlib.md5(bytes(emoji, 'utf-8')).hexdigest()}"
 
     if (emoji in ['tada', 'confetti_ball', 'clap', 'raised_hands'] and
