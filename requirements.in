@@ -5,5 +5,5 @@ gunicorn
 redis
 requests
 slackclient
-slackeventsapi
+slackeventsapi<2
 websocket-client
