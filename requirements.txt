@@ -12,7 +12,7 @@ flask==1.0.2
 gunicorn==19.9.0
 idna==2.7                 # via requests
 itsdangerous==1.1.0       # via flask
-jinja2==2.10              # via flask
+jinja2==2.10.1            # via flask
 markupsafe==1.0           # via jinja2
 pip-tools==3.1.0
 pyee==5.0.0               # via slackeventsapi
