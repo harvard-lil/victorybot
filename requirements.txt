@@ -41,7 +41,7 @@ redis==3.2.1
     # via
     #   -r requirements.in
     #   flask-redis
-requests==2.21.0
+requests==2.25.1
     # via
     #   -r requirements.in
     #   slackclient
@@ -59,7 +59,7 @@ toml==0.10.2
     # via pep517
 typing-extensions==3.7.4.3
     # via importlib-metadata
-urllib3==1.24.2
+urllib3==1.26.5
     # via requests
 websocket-client==0.54.0
     # via
