@@ -69,6 +69,7 @@ def handle_message(event_data):
 
         channel = event["channel"]
         event_timestamp = event["event_ts"]
+        message_timestamp = event["item"]["ts"]
 
         text = [phrase for phrase in event.get('text', '').split(f"<@{app.config['SLACKBOT_ID']}>") if phrase]
         announcement = text[-1].strip(' ,!.?;:') if len(text) > 0 else ''
@@ -79,7 +80,7 @@ def handle_message(event_data):
            not REDIS_STORE.exists(key)):
             REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
             message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
-            CLIENT.api_call("chat.postMessage", channel=channel, text=message, as_user=True)
+            CLIENT.api_call("chat.postMessage", channel=channel, text=message, thread_ts=message_timestamp, as_user=True)
             threading.Thread(target=temporarily_post_to_screenshare).start()
 
     return jsonify({"status":"ok"})
