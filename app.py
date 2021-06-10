@@ -27,10 +27,12 @@ expires = int(os.environ.get('CACHE_EXPIRES', '90'))
 
 @app.event('reaction_added')
 def respond_to_reaction(body, say):
-    reaction = body['event']['reaction']
-    event_timestamp = body['event']['event_ts']
-    message_timestamp = body['event']['item']['ts']
-    channel = body['event']['item']['channel']
+    event = body['event']
+
+    reaction = event['reaction']
+    event_timestamp = event['event_ts']
+    message_timestamp = event['item']['ts']
+    channel = event['item']['channel']
     digest = hashlib.md5(bytes(reaction, 'utf-8')).hexdigest()
 
     key = f'{channel}:{message_timestamp}:{digest}'
@@ -40,7 +42,17 @@ def respond_to_reaction(body, say):
         float(event_timestamp) - float(message_timestamp) < 90 and
         not cache.exists(key)):
         cache.set(key, "")
-        say(f':{reaction}:', thread_ts=message_timestamp)
+        text = f':{reaction}:'
+        try:
+            boss = os.environ['VICTORY_BOSS_ID']
+            reaction = os.environ['VICTORY_BOSS_REACTION']
+            message_user = event.get('item_user', '')
+            user = event['user']
+            if message_user == me and user == boss:
+                text = f':heart: :{reaction}: :heart:'
+        except KeyError:
+            pass
+        say(text, thread_ts=message_timestamp)
 
 
 @app.event('app_mention')
