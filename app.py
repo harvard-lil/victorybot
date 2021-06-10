@@ -1,121 +1,89 @@
-from ast import literal_eval
+import os
 from datetime import datetime
-from os import environ
-from flask import Flask, render_template, request, jsonify
-from flask_redis import FlaskRedis
+import redis
 import hashlib
-from slackclient import SlackClient
-from slackeventsapi import SlackEventAdapter
-import time
 import threading
+import time
 
-import error_handling
+from slack_bolt import App
 
-import logging
+# required environment variables
+app = App(
+    token=os.environ.get('SLACK_BOT_TOKEN'),
+    signing_secret=os.environ.get('SLACK_SIGNING_SECRET')
+)
+try:
+    redis_url = os.environ['FLY_REDIS_CACHE_URL']
+except KeyError:
+    redis_url = os.environ['REDIS_URL']
+cache = redis.from_url(redis_url)
 
-app = Flask(__name__)
-# required
-app.config['SECRET_KEY'] = environ.get('FLASK_SECRET_KEY')
-app.config['REDIS_URL'] = environ.get('REDIS_URL')
-app.config['SLACKBOT_TOKEN'] = environ.get('SLACKBOT_TOKEN')
-app.config['SLACKBOT_ID'] = environ.get('SLACKBOT_ID')
-app.config['SLACK_VERIFICATION_TOKEN'] = environ.get('SLACK_VERIFICATION_TOKEN')
-app.config['SCREENSHARE_CHANNEL'] = environ.get('SCREENSHARE_CHANNEL')
-app.config['SCREENSHARE_URL'] = environ.get('SCREENSHARE_URL')
-app.config['ADAM_ID'] = environ.get('ADAM_ID')
-# optional
-app.config['SCREENSHARE_DURATION'] = literal_eval(environ.get('SCREENSHARE_DURATION', '60'))
-app.config['REDIS_EXPIRES'] = literal_eval(environ.get('REDIS_KEY_FORMAT', '300'))
-app.config['LOG_LEVEL'] = environ.get('LOG_LEVEL', 'WARNING')
+me = os.environ.get('VICTORY_BOT_ID')
 
-# register error handlers
-error_handling.init_app(app)
-
-# register redis
-REDIS_STORE = FlaskRedis(app)
-
-# register Slack Event Adapter
-slack_events_adapter = SlackEventAdapter(app.config['SLACK_VERIFICATION_TOKEN'], "/events", app)
-CLIENT = SlackClient(app.config['SLACKBOT_TOKEN'])
-
-###
-### UTILS ###
-###
-
-@app.before_first_request
-def setup_logging():
-    if not app.debug:
-        # In production mode, add log handler to sys.stderr.
-        app.logger.addHandler(logging.StreamHandler())
-        app.logger.setLevel(getattr(logging, app.config['LOG_LEVEL']))
+# optional environment variables
+reactions = os.environ.get('VICTORY_REACTIONS', 'test_tube,top').split(',')
+expires = int(os.environ.get('CACHE_EXPIRES', '90'))
 
 
-###
-### ROUTES
-###
+@app.event('reaction_added')
+def respond_to_reaction(body, say):
+    reaction = body['event']['reaction']
+    event_timestamp = body['event']['event_ts']
+    message_timestamp = body['event']['item']['ts']
+    channel = body['event']['item']['channel']
+    digest = hashlib.md5(bytes(reaction, 'utf-8')).hexdigest()
 
-@app.route('/', methods=['GET'])
-def index():
-    # http://1lineart.kulaone.com/
-    return render_template('generic.html', context={'heading': "victorybot",
-                                                    'message': "ᕦ(ò_óˇ)ᕤ"})
+    key = f'{channel}:{message_timestamp}:{digest}'
+
+    if (reaction in reactions and
+        datetime.now().timestamp() - float(event_timestamp) < 90 and
+        float(event_timestamp) - float(message_timestamp) < 90 and
+        not cache.exists(key)):
+        cache.set(key, "")
+        say(f':{reaction}:', thread_ts=message_timestamp)
 
 
-@slack_events_adapter.on("app_mention")
-def handle_message(event_data):
-    event = event_data["event"]
+@app.event('app_mention')
+def handle_message(body, say):
+    event = body['event']
 
-    if event.get("subtype") is None and event["user"] != app.config['SLACKBOT_ID']:
+    if (event.get('subtype') is None and
+        event['user'] != me):
 
-        channel = event["channel"]
-        event_timestamp = event["event_ts"]
+        channel = event['channel']
+        event_timestamp = event['event_ts']
 
-        text = [phrase for phrase in event.get('text', '').split(f"<@{app.config['SLACKBOT_ID']}>") if phrase]
+        text = [phrase for
+                phrase in event.get('text', '').
+                split(f"<@{me}>")
+                if phrase]
         announcement = text[-1].strip(' ,!.?;:') if len(text) > 0 else ''
 
-        key = f"{channel}:{hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()}"
+        digest = hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()
+        key = f'{channel}:{digest}'
 
         if (datetime.now().timestamp() - float(event_timestamp) < 90 and
-           not REDIS_STORE.exists(key)):
-            REDIS_STORE.setex(key, app.config['REDIS_EXPIRES'], "")
-            message = f"Victory! Victory! {announcement}! <!here|here>!  :tada:"
-            CLIENT.api_call("chat.postMessage", channel=channel, text=message, as_user=True)
+            not cache.exists(key)):
+            cache.setex(key, expires, '')
+            message = f"Victory! Victory! {announcement}! <!here|here>! :tada:"
+            say(message)
             threading.Thread(target=temporarily_post_to_screenshare).start()
-
-    return jsonify({"status":"ok"})
 
 
 def temporarily_post_to_screenshare():
-    # in screenshare, for a minute
-    response = CLIENT.api_call("chat.postMessage", channel=app.config['SCREENSHARE_CHANNEL'], text=app.config['SCREENSHARE_URL'], as_user=True)
-    if response["ok"]:
-        time.sleep(app.config['SCREENSHARE_DURATION'])
-        CLIENT.api_call("chat.delete", channel=app.config['SCREENSHARE_CHANNEL'], ts=response["ts"])
+    channel = os.environ.get('SCREENSHARE_CHANNEL')
+    url = os.environ.get('SCREENSHARE_URL')
+    if channel and url:
+        response = app.client.chat_postMessage(
+            channel=channel,
+            text=url,
+            as_user=True)
+        if response['ok']:
+            time.sleep(int(os.environ.get('SCREENSHARE_DURATION', '60')))
+            app.client.chat_delete(
+                channel=channel,
+                ts=response['ts'])
 
 
-@slack_events_adapter.on("reaction_added")
-def reaction_added(event_data):
-    team_id = event_data["team_id"]
-    event = event_data["event"]
-
-    event_timestamp = event["event_ts"]
-    user = event["user"]
-    emoji = event["reaction"]
-    channel = event["item"]["channel"]
-    message_timestamp = event["item"]["ts"]
-    message_user = event.get("item_user", "")
-
-    key = f"{channel}:{message_timestamp}:{hashlib.md5(bytes(emoji, 'utf-8')).hexdigest()}"
-
-    if (emoji in ['tada', 'confetti_ball', 'clap', 'raised_hands'] and
-        datetime.now().timestamp() - float(event_timestamp) < 90 and
-        float(event_timestamp) - float(message_timestamp) < 90 and
-        not REDIS_STORE.exists(key)):
-            REDIS_STORE.set(key, "")
-            if message_user == app.config['SLACKBOT_ID'] and user == app.config['ADAM_ID']:
-                text = ":heart: :cooladam: :heart:"
-            else:
-                text = f":{emoji}:"
-            CLIENT.api_call("chat.postMessage", channel=channel, text=text, thread_ts=message_timestamp, as_user=True)
-
-    return jsonify({"status":"ok"})
+if __name__ == "__main__":
+    app.start(port=int(os.environ.get("PORT", 3000)))

@@ -1,0 +1,25 @@
+version: '2'
+
+services:
+  redis:
+    image: registry.lil.tools/library/redis:4.0.6
+    volumes:
+      - redis_data:/data:delegated
+  web:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: victorybot:0.1.0
+    tty: true
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_SIGNING_SECRET=${SLACK_SIGNING_SECRET}
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  redis_data:
+
+networks:
+  default:

@@ -1,9 +1,0 @@
-pip-tools
-Flask
-Flask-Redis
-gunicorn
-redis
-requests
-slackclient
-slackeventsapi<2
-websocket-client
