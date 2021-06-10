@@ -3,6 +3,7 @@ name = "victorybot"
 version = "0.1.0"
 description = ""
 authors = ["Ben Steinberg <bsteinberg@law.harvard.edu>"]
+license = "GPL-3.0-only"
 
 [tool.poetry.dependencies]
 python = "^3.7"
