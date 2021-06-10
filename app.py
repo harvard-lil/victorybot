@@ -42,17 +42,17 @@ def respond_to_reaction(body, say):
         float(event_timestamp) - float(message_timestamp) < 90 and
         not cache.exists(key)):
         cache.set(key, "")
-        text = f':{reaction}:'
+        message = f':{reaction}:'
         try:
             boss = os.environ['VICTORY_BOSS_ID']
             reaction = os.environ['VICTORY_BOSS_REACTION']
             message_user = event.get('item_user', '')
             user = event['user']
             if message_user == me and user == boss:
-                text = f':heart: :{reaction}: :heart:'
+                message = f':heart: :{reaction}: :heart:'
         except KeyError:
             pass
-        say(text, thread_ts=message_timestamp)
+        say(message, thread_ts=message_timestamp)
 
 
 @app.event('app_mention')
@@ -66,8 +66,7 @@ def handle_message(body, say):
         event_timestamp = event['event_ts']
 
         text = [phrase for
-                phrase in event.get('text', '').
-                split(f"<@{me}>")
+                phrase in event.get('text', '').split(f'<@{me}>')
                 if phrase]
         announcement = text[-1].strip(' ,!.?;:') if len(text) > 0 else ''
 
@@ -77,7 +76,7 @@ def handle_message(body, say):
         if (datetime.now().timestamp() - float(event_timestamp) < 90 and
             not cache.exists(key)):
             cache.setex(key, expires, '')
-            message = f"Victory! Victory! {announcement}! <!here|here>! :tada:"
+            message = f'Victory! Victory! {announcement}! <!here|here>! :tada:'
             say(message)
             threading.Thread(target=temporarily_post_to_screenshare).start()
 
