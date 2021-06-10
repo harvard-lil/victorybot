@@ -30,17 +30,16 @@ def respond_to_reaction(body, say):
     event = body['event']
 
     reaction = event['reaction']
-    event_timestamp = event['event_ts']
+    event_ts = float(event['event_ts'])
     message_timestamp = event['item']['ts']
     channel = event['item']['channel']
     digest = hashlib.md5(bytes(reaction, 'utf-8')).hexdigest()
 
     key = f'{channel}:{message_timestamp}:{digest}'
 
-    if (reaction in reactions and
-        datetime.now().timestamp() - float(event_timestamp) < 90 and
-        float(event_timestamp) - float(message_timestamp) < 90 and
-        not cache.exists(key)):
+    now = datetime.now().timestamp()
+    in_time = now - event_ts < 90 and event_ts - float(message_timestamp) < 90
+    if reaction in reactions and in_time and not cache.exists(key):
         cache.set(key, "")
         message = f':{reaction}:'
         try:
@@ -59,11 +58,9 @@ def respond_to_reaction(body, say):
 def handle_message(body, say):
     event = body['event']
 
-    if (event.get('subtype') is None and
-        event['user'] != me):
-
+    if event.get('subtype') is None and event['user'] != me:
         channel = event['channel']
-        event_timestamp = event['event_ts']
+        event_ts = float(event['event_ts'])
 
         text = [phrase for
                 phrase in event.get('text', '').split(f'<@{me}>')
@@ -73,8 +70,8 @@ def handle_message(body, say):
         digest = hashlib.md5(bytes(announcement, 'utf-8')).hexdigest()
         key = f'{channel}:{digest}'
 
-        if (datetime.now().timestamp() - float(event_timestamp) < 90 and
-            not cache.exists(key)):
+        now = datetime.now().timestamp()
+        if now - event_ts < 90 and not cache.exists(key):
             cache.setex(key, expires, '')
             message = f'Victory! Victory! {announcement}! <!here|here>! :tada:'
             say(message)

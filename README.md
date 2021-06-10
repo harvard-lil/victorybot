@@ -50,7 +50,7 @@ change:
 
 Until this is automated, keep it clean with
 
-    poetry run flake8 --ignore=E129,W504 app.py
+    poetry run flake8 app.py
 
 Deployment
 ----------
