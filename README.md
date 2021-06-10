@@ -41,8 +41,8 @@ host (Poetry, ngrok) and those required in the containers (Redis); you
 could equally well run Redis locally and skip the Docker
 arrangement.
 
-At the moment, you need to stop and rebuild the app container after a
-code change:
+At the moment, you need to rebuild the app container after a code
+change:
 
     docker-compose up --build
 
