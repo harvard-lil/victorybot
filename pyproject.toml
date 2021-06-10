@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "victorybot"
 version = "0.1.0"
-description = ""
+description = "A Slack bot for cheering on the victorious"
 authors = ["Ben Steinberg <bsteinberg@law.harvard.edu>"]
 license = "GPL-3.0-only"
 
