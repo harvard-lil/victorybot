@@ -62,3 +62,9 @@ need to set at least `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, and
 want to set `VICTORY_REACTIONS`, a comma-separated list of reaction
 names. You may additionally want to set `SCREENSHARE_CHANNEL` and
 `SCREENSHARE_URL`.
+
+Acknowledgments
+---------------
+
+Thanks to @rebeccacremona for writing this originally. Thanks to
+http://1lineart.kulaone.com/ for the Power2 one-liner: ᕦ(ò_óˇ)ᕤ
