@@ -34,7 +34,10 @@ You then expose the application to the outside world using
     ngrok http 3000
 
 You can then put the URL ngrok provides into the Event Subscriptions
-page of your bot's configuration, appending the path `/slack/events`.
+page of your bot's configuration, appending the path
+`/slack/events`. In addition to exposing your application, ngrok lets
+you inspect requests and responses at
+[127.0.0.1:4040](http://127.0.0.1:4040).
 
 There is a somewhat arbitrary line between services required on the
 host (Poetry, ngrok) and those required in the containers (Redis); you
