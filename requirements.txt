@@ -1,9 +1,21 @@
-redis==3.5.3 ; python_version >= "3.7" and python_version < "4.0" \
-    --hash=sha256:0e7e0cfca8660dea8b7d5cd8c4f6c5e29e11f31158c0b0ae91a397f00e5a05a2 \
-    --hash=sha256:432b788c4530cfe16d8d943a09d40ca6c16149727e4afe8c2c9d5580c59d9f24
-slack-bolt==1.17.0 ; python_version >= "3.7" and python_version < "4.0" \
-    --hash=sha256:93b819955337e5ceaaa6871a06ef5f816b6376abc16a3080c0e7240487bc3bcb \
-    --hash=sha256:ca051f7c62346ecea4b363379de9357844b4f6c8b0c9d0784664d2543d47d42a
-slack-sdk==3.21.0 ; python_version >= "3.7" and python_version < "4.0" \
-    --hash=sha256:552c6961293da524def64e012543bc4b8859f96fa8780f016de6daf8abeb1c1c \
-    --hash=sha256:c5452d0bfa8cb716103522e51f695efac8d62af20d95e419b8c3265525941405
+async-timeout==4.0.2 ; python_version >= "3.7" and python_version <= "3.11.2" \
+    --hash=sha256:2163e1640ddb52b7a8c80d0a67a08587e5d245cc9c553a74a847056bc2976b15 \
+    --hash=sha256:8ca1e4fcf50d07413d66d1a5e416e42cfdf5851c981d679a09851a6853383b3c
+importlib-metadata==6.3.0 ; python_version >= "3.7" and python_version < "3.8" \
+    --hash=sha256:23c2bcae4762dfb0bbe072d358faec24957901d75b6c4ab11172c0c982532402 \
+    --hash=sha256:8f8bd2af397cf33bd344d35cfe7f489219b7d14fc79a3f854b75b8417e9226b0
+redis==4.5.4 ; python_version >= "3.7" and python_version < "4.0" \
+    --hash=sha256:2c19e6767c474f2e85167909061d525ed65bea9301c0770bb151e041b7ac89a2 \
+    --hash=sha256:73ec35da4da267d6847e47f68730fdd5f62e2ca69e3ef5885c6a78a9374c3893
+slack-bolt==1.17.1 ; python_version >= "3.7" and python_version < "4.0" \
+    --hash=sha256:a0aa6b09d94ca5bd7be2284abcb3d19e90ccf6c69c2bc61df15d7a750065b331 \
+    --hash=sha256:f80811c55e332b58adecf13209f3758ca2a76e66ce1d54d9b5031df0f98ffbdd
+slack-sdk==3.21.1 ; python_version >= "3.7" and python_version < "4.0" \
+    --hash=sha256:276358fcddaec49895bea50174e4bd7f83d53b74b917de03ca511e145c6e75d2 \
+    --hash=sha256:451f2394f6d3696d08c9b290844332aab6e8e39473327fc3f7d19794c7eb441d
+typing-extensions==4.5.0 ; python_version >= "3.7" and python_version < "3.8" \
+    --hash=sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb \
+    --hash=sha256:fb33085c39dd998ac16d1431ebc293a8b3eedd00fd4a32de0ff79002c19511b4
+zipp==3.15.0 ; python_version >= "3.7" and python_version < "3.8" \
+    --hash=sha256:112929ad649da941c23de50f356a2b5570c954b65150642bccdd66bf194d224b \
+    --hash=sha256:48904fc76a60e542af151aded95726c1a5c34ed43ab4134b597665c86d7ad556
